@@ -1,4 +1,5 @@
 import socket
+import unreal
 
 def send_message(message, host='localhost', port=9999):
     # Create a client socket
@@ -21,7 +22,12 @@ def send_message(message, host='localhost', port=9999):
         client_socket.close()
 
 # Example usage
-# message = "create_ik_rig:glassesGuyNew"
+# message = "create_ik_rig:Nemu"
 # send_message(message)
-save_path = f"/Game/IKRigs/glassesGuyNewIKRig.glassesGuyNewIKRig"
-send_message("asset_exists:" + save_path)
+# save_path = f"/Game/IKRigs/glassesGuyNewIKRig.glassesGuyNewIKRig"
+# send_message("asset_exists:" + save_path)
+fbx_file_path = "C:/Users/VICON/Desktop/MathijsTestData/glassesGuy.FBX"  # Replace with your FBX file path
+destination_path = '/Game/ImportedAssets/'  # Replace with your desired destination path in Unreal Engine
+message = f"import_fbx:{fbx_file_path},{destination_path}"
+unreal.log("SENDING: " + message)
+send_message(message)

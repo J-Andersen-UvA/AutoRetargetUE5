@@ -1,8 +1,9 @@
 import unreal
 import socket
 import threading
-from ikRigCreator import createIKRig
+import ikRigCreator
 import simpleQueue
+import skeletalMeshImporter
 import functools
 
 class Retargeter:
@@ -42,10 +43,16 @@ class Retargeter:
             unreal.log("Result: " + str(result))
         pass
     
+    def import_fbx(self, args):
+        args = args.split(',')
+        # Import FBX file into Unreal Engine
+        print("Importing FBX file:", args[0])
+        self.queue.enqueue(skeletalMeshImporter.import_fbx, [args[0], args[1]])
+
     def create_ik_rig(self, mesh_name):
         # Create IK rig for the given mesh
         print("Going to create IK Rig for:", mesh_name)
-        self.queue.enqueue(createIKRig, [mesh_name])
+        self.queue.enqueue(ikRigCreator.createIKRig, [mesh_name])
 
     # Function to check if an asset exists
     def asset_exists(self, asset_path):
@@ -63,7 +70,7 @@ class Retargeter:
             print(f"Decoded data: {data_str}")
 
             # Split the decoded string into parts
-            parts = data_str.split(':')
+            parts = data_str.split(':', 1)
             if len(parts) < 2:
                 raise ValueError("Invalid message format, missing ':'")
 
@@ -77,6 +84,7 @@ class Retargeter:
             message_handlers = {
                 "create_ik_rig": self.create_ik_rig,
                 "asset_exists": self.asset_exists,
+                "import_fbx": self.import_fbx
             }
 
             # Call the appropriate handler based on the message type
