@@ -21,5 +21,5 @@ def send_message(message, host='localhost', port=9999):
         client_socket.close()
 
 # Example usage
-message = "Hello, server!"
+message = "create_ik_rig:Nemu"
 send_message(message)
