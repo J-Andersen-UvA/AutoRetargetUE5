@@ -38,13 +38,18 @@ class Retargeter:
     def on_slate_post_tick(self, delta_time):
         if (self.queue.size() > 0):
             func, args = self.queue.dequeue()
-            func(*args)
+            result = func(*args)
+            unreal.log("Result: " + str(result))
         pass
     
     def create_ik_rig(self, mesh_name):
         # Create IK rig for the given mesh
         print("Going to create IK Rig for:", mesh_name)
         self.queue.enqueue(createIKRig, [mesh_name])
+
+    # Function to check if an asset exists
+    def asset_exists(self, asset_path):
+        self.queue.enqueue(unreal.EditorAssetLibrary.does_asset_exist, [asset_path])
 
     def handle_default(self, data):
         # Handle default message
@@ -70,7 +75,8 @@ class Retargeter:
 
             # Define message handlers
             message_handlers = {
-                "create_ik_rig": functools.partial(self.create_ik_rig)
+                "create_ik_rig": self.create_ik_rig,
+                "asset_exists": self.asset_exists,
             }
 
             # Call the appropriate handler based on the message type

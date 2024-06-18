@@ -21,5 +21,7 @@ def send_message(message, host='localhost', port=9999):
         client_socket.close()
 
 # Example usage
-message = "create_ik_rig:Nemu"
-send_message(message)
+# message = "create_ik_rig:glassesGuyNew"
+# send_message(message)
+save_path = f"/Game/IKRigs/glassesGuyNewIKRig.glassesGuyNewIKRig"
+send_message("asset_exists:" + save_path)
