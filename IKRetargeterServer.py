@@ -13,6 +13,7 @@ class Retargeter:
         self.running = False
         self.slate_post_tick_handle = None
         self.queue = simpleQueue.Queue()
+        self.current_connection = None
     
     def start(self, port=9999):
         self.running = True
@@ -75,7 +76,7 @@ class Retargeter:
         # Handle default message
         print("Received message:", data)
 
-    def handle_data(self, data):
+    def handle_data(self, data, connection):
         # Handle data received from client
         try:
             # Decode the byte string into a regular string
@@ -89,9 +90,11 @@ class Retargeter:
 
             message_type = parts[0]
             message_content = parts[1]
+            self.current_connection = connection
 
             print(f"Message type: {message_type}")
             print(f"Message content: {message_content}")
+            print(f"Client: {self.current_connection}")
 
             # Define message handlers
             message_handlers = {
@@ -105,15 +108,22 @@ class Retargeter:
             handler = message_handlers.get(message_type, self.handle_default)
             handler(message_content)
 
+            # Send a response to the client
+            self.send_response(connection, f"Processed {message_type}")
+
         except UnicodeDecodeError as e:
             # Handle decoding errors
             print(f"Error decoding data: {e}")
+            self.send_response(connection, f"Error decoding data: {e}")
         except ValueError as ve:
             # Handle invalid message format errors
             print(f"Error: {ve}")
+            self.send_response(connection, f"Error: {ve}")
         except Exception as e:
             # Handle any other unexpected errors
             print(f"Unexpected error: {e}")
+            self.send_response(connection, f"Unexpected error: {e}")
+
 
     def listen_clients(self):
         # Wait for incoming connections
@@ -126,7 +136,7 @@ class Retargeter:
                 # Receive data from client
                 data = connection.recv(1024)
                 if data:
-                    self.handle_data(data)
+                    self.handle_data(data, connection)
                     
                 
             except Exception as e:
