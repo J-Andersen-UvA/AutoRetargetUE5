@@ -2,6 +2,7 @@ import unreal
 import socket
 import threading
 import ikRigCreator
+import IKRetargeter
 import simpleQueue
 import skeletalMeshImporter
 import functools
@@ -54,6 +55,18 @@ class Retargeter:
         print("Going to create IK Rig for:", mesh_name)
         self.queue.enqueue(ikRigCreator.createIKRig, [mesh_name])
 
+    def retarget_ik_rigs(self, args):
+        args = args.split(',')
+        if len(args) < 3:
+            raise ValueError("Invalid message format, missing arguments. Expecting: source_rig_path, target_rig_path, rtg_name")
+
+        source_rig_path = args[0]
+        target_rig_path = args[1]
+        rtg_name = args[2]
+
+        print("Retargeting IK rigs:", source_rig_path, target_rig_path)
+        self.queue.enqueue(IKRetargeter.create_retargeter, [source_rig_path, target_rig_path, rtg_name])
+
     # Function to check if an asset exists
     def asset_exists(self, asset_path):
         self.queue.enqueue(unreal.EditorAssetLibrary.does_asset_exist, [asset_path])
@@ -84,7 +97,8 @@ class Retargeter:
             message_handlers = {
                 "create_ik_rig": self.create_ik_rig,
                 "asset_exists": self.asset_exists,
-                "import_fbx": self.import_fbx
+                "import_fbx": self.import_fbx,
+                "retarget_ik_rigs": self.retarget_ik_rigs,
             }
 
             # Call the appropriate handler based on the message type
@@ -123,7 +137,13 @@ class Retargeter:
             finally:
                 if connection:
                     connection.close()
-    
+
+    def send_response(self, connection, message):
+        try:
+            connection.sendall(message.encode('utf-8'))
+        except Exception as e:
+            print(f"Error sending response: {e}")
+
     def tick(self, delta_time):
         pass
 
