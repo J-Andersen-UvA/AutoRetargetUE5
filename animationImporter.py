@@ -34,9 +34,9 @@ def import_fbx_animation(fbx_file_path, destination_path, name, skeleton_path=""
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
 
 # Usage example
-print("++++++++++++++")
-fbx_file_path = "C:/Users/VICON/Desktop/MathijsTestData/AnimNoMesh.FBX"  # Replace with your FBX file path
-destination_path = '/Game/ImportedAssets/'  # Replace with your desired destination path in Unreal Engine
-name = "testAnim2"
-import_fbx_animation(fbx_file_path, destination_path, name, skeleton_path="/Game/ImportedAssets/AnimMesh")
-import_fbx_animation(fbx_file_path, destination_path, name)
+# print("++++++++++++++")
+# fbx_file_path = "C:/Users/VICON/Desktop/MathijsTestData/AnimNoMesh.FBX"  # Replace with your FBX file path
+# destination_path = '/Game/ImportedAssets/'  # Replace with your desired destination path in Unreal Engine
+# name = "testAnim2"
+# import_fbx_animation(fbx_file_path, destination_path, name, skeleton_path="/Game/ImportedAssets/AnimMesh")
+# import_fbx_animation(fbx_file_path, destination_path, name)

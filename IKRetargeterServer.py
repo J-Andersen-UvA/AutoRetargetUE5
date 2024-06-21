@@ -6,6 +6,7 @@ import IKRetargeter
 import simpleQueue
 import skeletalMeshImporter
 import fetchUEInfo
+import animationImporter
 import functools
 
 class Retargeter:
@@ -65,9 +66,25 @@ class Retargeter:
     
     def import_fbx(self, args):
         args = args.split(',')
+
+        if len(args) < 2:
+            self.send_response(self.current_connection, "Invalid message format, missing arguments. Expecting: fbx_file_path, destination_path")
+            raise ValueError("Invalid message format, missing arguments. Expecting: fbx_file_path, destination_path")
+
         # Import FBX file into Unreal Engine
         print("Importing FBX file:", args[0])
         self.queue.enqueue(skeletalMeshImporter.import_fbx, [args[0], args[1]])
+    
+    def import_fbx_animation(self, args):
+        args = args.split(',')
+
+        if len(args) < 3:
+            self.send_response(self.current_connection, "Invalid message format, missing arguments. Expecting: fbx_file_path, destination_path, name, skeleton_path (optional)")
+            raise ValueError("Invalid message format, missing arguments. Expecting: fbx_file_path, destination_path, name, skeleton_path (optional)")
+
+        # Import FBX animation file into Unreal Engine
+        print("Importing FBX animation file:", args[0])
+        self.queue.enqueue(animationImporter.import_fbx_animation, args)
 
     def create_ik_rig(self, mesh_name):
         # Create IK rig for the given mesh
@@ -77,6 +94,7 @@ class Retargeter:
     def retarget_ik_rigs(self, args):
         args = args.split(',')
         if len(args) < 3:
+            self.send_response(self.current_connection, "Invalid message format, missing arguments. Expecting: source_rig_path, target_rig_path, rtg_name")
             raise ValueError("Invalid message format, missing arguments. Expecting: source_rig_path, target_rig_path, rtg_name")
 
         source_rig_path = args[0]
@@ -89,6 +107,7 @@ class Retargeter:
     def fetch_ik_rigs(self, args):
         args = args.split(',')
         if len(args) < 1:
+            self.send_response(self.current_connection, "Invalid message format, missing arguments. Expecting: paths to folders to be searched for IK rigs.")
             raise ValueError("Invalid message format, missing arguments. Expecting: paths to folders to be searched for IK rigs.")
 
         print("Fetching IK rigs")
@@ -98,6 +117,7 @@ class Retargeter:
     def fetch_retargets(self, args):
         args = args.split(',')
         if len(args) < 1:
+            self.send_response(self.current_connection, "Invalid message format, missing arguments. Expecting: paths to folders to be searched for IK retargeters.")
             raise ValueError("Invalid message format, missing arguments. Expecting: paths to folders to be searched for IK retargeters.")
 
         print("Fetching IK retargeters")
@@ -128,6 +148,7 @@ class Retargeter:
             # Split the decoded string into parts
             parts = data_str.split(':', 1)
             if len(parts) < 2:
+                self.send_response(connection, "Invalid message format, missing ':'")
                 raise ValueError("Invalid message format, missing ':'")
 
             message_type = parts[0]
@@ -143,6 +164,7 @@ class Retargeter:
                 "create_ik_rig": self.create_ik_rig,
                 "asset_exists": self.asset_exists,
                 "import_fbx": self.import_fbx,
+                "import_fbx_animation": self.import_fbx_animation,
                 "retarget_ik_rigs": self.retarget_ik_rigs,
                 "fetch_ik_rigs": self.fetch_ik_rigs,
                 "fetch_retargets": self.fetch_retargets,
