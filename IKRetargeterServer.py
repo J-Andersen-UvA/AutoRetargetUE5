@@ -5,6 +5,7 @@ import ikRigCreator
 import IKRetargeter
 import simpleQueue
 import skeletalMeshImporter
+import fetchUEInfo
 import functools
 
 class Retargeter:
@@ -14,6 +15,7 @@ class Retargeter:
         self.slate_post_tick_handle = None
         self.queue = simpleQueue.Queue()
         self.current_connection = None
+        self.rigs = []
     
     def start(self, port=9999):
         self.running = True
@@ -25,6 +27,10 @@ class Retargeter:
         
         # Register Slate post-tick callback
         self.slate_post_tick_handle = unreal.register_slate_post_tick_callback(self.on_slate_post_tick)
+
+        # Start listening for clients in a separate daemon thread
+        listen_thread = threading.Thread(target=self.listen_clients, daemon=True)
+        listen_thread.start()
     
     def stop(self):
         self.running = False
@@ -41,8 +47,19 @@ class Retargeter:
     def on_slate_post_tick(self, delta_time):
         if (self.queue.size() > 0):
             func, args = self.queue.dequeue()
-            result = func(*args)
-            unreal.log("Result: " + str(result))
+            unreal.log(f"Calling function {func.__name__} with arguments: {args}")
+
+            if func == fetchUEInfo.fetch_ik_rigs:
+                result = func(args)
+                self.rigs = result
+                print("IK Rigs:", self.rigs)
+                print("Sending response to client...", self.current_connection)
+                print("Result:", str(result))
+                self.send_response(self.current_connection, str(result))
+            else:
+                result = func(*args)
+                unreal.log("Result: " + str(result))
+                self.current_connection.close()
         pass
     
     def import_fbx(self, args):
@@ -68,9 +85,24 @@ class Retargeter:
         print("Retargeting IK rigs:", source_rig_path, target_rig_path)
         self.queue.enqueue(IKRetargeter.create_retargeter, [source_rig_path, target_rig_path, rtg_name])
 
+    def fetch_ik_rigs(self, args):
+        args = args.split(',')
+        if len(args) < 1:
+            raise ValueError("Invalid message format, missing arguments. Expecting: paths to folders to be searched for IK rigs.")
+
+        print("Fetching IK rigs")
+        print(args)
+        self.queue.enqueue(fetchUEInfo.fetch_ik_rigs, args)
+
     # Function to check if an asset exists
     def asset_exists(self, asset_path):
         self.queue.enqueue(unreal.EditorAssetLibrary.does_asset_exist, [asset_path])
+
+    def close_server(self):
+        # Close the server socket
+        if self.socket:
+            self.socket.close()
+            self.socket = None
 
     def handle_default(self, data):
         # Handle default message
@@ -102,14 +134,20 @@ class Retargeter:
                 "asset_exists": self.asset_exists,
                 "import_fbx": self.import_fbx,
                 "retarget_ik_rigs": self.retarget_ik_rigs,
+                "fetch_ik_rigs": self.fetch_ik_rigs,
+                "close_server": self.close_server,
+                "stop_server": self.stop,
             }
 
             # Call the appropriate handler based on the message type
             handler = message_handlers.get(message_type, self.handle_default)
-            handler(message_content)
+            if message_content == "" or message_content == None:
+                handler()
+            else:
+                handler(message_content)
 
             # Send a response to the client
-            self.send_response(connection, f"Processed {message_type}")
+            # self.send_response(connection, f"Processed {message_type}")
 
         except UnicodeDecodeError as e:
             # Handle decoding errors
@@ -144,15 +182,17 @@ class Retargeter:
                 if self.socket:
                     print("Error accepting connection:", e)
                 break
-            finally:
-                if connection:
-                    connection.close()
+            # finally:
+            #     if connection:
+            #         connection.close()
 
     def send_response(self, connection, message):
         try:
             connection.sendall(message.encode('utf-8'))
         except Exception as e:
             print(f"Error sending response: {e}")
+        finally:
+            connection.close()
 
     def tick(self, delta_time):
         pass
@@ -162,8 +202,8 @@ retargeter = Retargeter()
 retargeter.start()
 
 # Start listening for clients in a separate thread
-listen_thread = threading.Thread(target=retargeter.listen_clients)
-listen_thread.start()
+# listen_thread = threading.Thread(target=retargeter.listen_clients)
+# listen_thread.start()
 
 # Keep the program running until user interrupts or signals to stop
 try:

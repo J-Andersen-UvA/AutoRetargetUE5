@@ -1,6 +1,6 @@
 import unreal
 
-def fetch_ikrigs(search_paths=["/Game"]):
+def fetch_ik_rigs(search_paths=["/Game"]):
     ikrig_filepaths = []
     
     # Use the AssetRegistry to find all assets of the specified type
@@ -32,8 +32,8 @@ def fetch_retargets(search_paths=["/Game"]):
 
 # Example usage:
 # You can specify multiple search paths if needed
-# search_paths = ["/Game/IKRigs", "/Game/Retargets", "/Game/tst/autoretarget"]
-# ikrigs = fetch_ikrigs(search_paths)
+# search_paths = ['/Game/IKRigs']
+# ikrigs = fetch_ik_rigs(search_paths)
 # retargets = fetch_retargets(search_paths)
 
 # print("IK Rigs:")
