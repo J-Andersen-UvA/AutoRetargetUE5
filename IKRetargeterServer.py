@@ -16,6 +16,7 @@ class Retargeter:
         self.queue = simpleQueue.Queue()
         self.current_connection = None
         self.rigs = []
+        self.retargets = []
     
     def start(self, port=9999):
         self.running = True
@@ -52,14 +53,14 @@ class Retargeter:
             if func == fetchUEInfo.fetch_ik_rigs:
                 result = func(args)
                 self.rigs = result
-                print("IK Rigs:", self.rigs)
-                print("Sending response to client...", self.current_connection)
-                print("Result:", str(result))
-                self.send_response(self.current_connection, str(result))
+            elif func == fetchUEInfo.fetch_retargets:
+                result = func(args)
+                self.retargets = result
             else:
                 result = func(*args)
-                unreal.log("Result: " + str(result))
-                self.current_connection.close()
+
+            unreal.log("Result: " + str(result))
+            self.send_response(self.current_connection, str(result))
         pass
     
     def import_fbx(self, args):
@@ -93,6 +94,15 @@ class Retargeter:
         print("Fetching IK rigs")
         print(args)
         self.queue.enqueue(fetchUEInfo.fetch_ik_rigs, args)
+
+    def fetch_retargets(self, args):
+        args = args.split(',')
+        if len(args) < 1:
+            raise ValueError("Invalid message format, missing arguments. Expecting: paths to folders to be searched for IK retargeters.")
+
+        print("Fetching IK retargeters")
+        print(args)
+        self.queue.enqueue(fetchUEInfo.fetch_retargets, args)
 
     # Function to check if an asset exists
     def asset_exists(self, asset_path):
@@ -135,6 +145,7 @@ class Retargeter:
                 "import_fbx": self.import_fbx,
                 "retarget_ik_rigs": self.retarget_ik_rigs,
                 "fetch_ik_rigs": self.fetch_ik_rigs,
+                "fetch_retargets": self.fetch_retargets,
                 "close_server": self.close_server,
                 "stop_server": self.stop,
             }

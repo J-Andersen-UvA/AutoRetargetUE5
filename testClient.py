@@ -46,6 +46,9 @@ def send_message(message, host='localhost', port=9999, timeout=5):
 message = "fetch_ik_rigs:/Game/IKRigs"
 send_message(message)
 
+message = "fetch_retargets:/Game/Retargets"
+send_message(message)
+
 # message = "close_server:"
 # send_message(message)
 
