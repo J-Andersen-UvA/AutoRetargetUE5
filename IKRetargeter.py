@@ -1,5 +1,4 @@
 import unreal
-import unreal
 
 # Using 2 IK-rigs, create a retargeter between them
 def create_retargeter(source_rig_path : str, target_rig_path : str, rtg_name : str="RTG") -> bool:
