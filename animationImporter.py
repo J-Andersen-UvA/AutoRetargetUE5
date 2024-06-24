@@ -28,7 +28,6 @@ def import_fbx_animation(fbx_file_path, destination_path, name, skeleton_path=""
     else:
         task.options.skeleton = None
 
-
     task.options.mesh_type_to_import = unreal.FBXImportType.FBXIT_ANIMATION 
 
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])

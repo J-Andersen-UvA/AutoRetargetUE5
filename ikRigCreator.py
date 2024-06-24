@@ -1,20 +1,19 @@
 import unreal
 
 def createIKRig(meshName : str = "glassesGuyNew") -> bool:
-    '''
-        An approach to making IK rigs with python in UE
+    """
+    Creates an IK Rig for a specified skeletal mesh. The function sets up the IK rig,
+    adds the skeletal mesh, and attempts to automatically generate the IK rig using Unreal Engine's tools.
+    The IK rig is then saved to "/Game/IKRigs".
+    The skeletalMesh is fetched from "/Game/SkeletalMeshes/{meshName}/{meshName}".
 
-        Steps:
-        1. Create IKRigDefinition object
-        2. Get IKRigController from it
-        3. Add skeletal mesh to it
-        4. Add retarget chain if not present
-        5. Use apply_auto_fbik to attempt to automatically generate the IK rig
-        6. Profit
+    Args:
+        meshName: The name of the skeletal mesh to create the IK rig for (default: "glassesGuyNew")
 
-        Args:
-            meshName (str): The name of the mesh to create the IK rig for
-    '''
+    return:
+        True if the IK rig is successfully created and saved, False otherwise
+    """
+
     # def setBoneChains(ik_rig_controller):
     #     # Add retarget chain
     #     # SPINE AND HEAD

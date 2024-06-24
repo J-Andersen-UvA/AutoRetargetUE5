@@ -10,6 +10,39 @@ import animationImporter
 import functools
 
 class Retargeter:
+    """
+    The Retargeter class manages a server for handling Unreal Engine animation retargeting tasks.
+    It includes methods to start and stop the server, process client requests, and perform various retargeting and import operations.
+    The class uses a queue to manage tasks, ensuring they are executed in the main thread via a Slate post-tick callback.
+
+    Attributes:
+        socket: The server socket for listening to client connections.
+        running: A flag indicating whether the server is running.
+        slate_post_tick_handle: Handle for the Slate post-tick callback.
+        queue: A queue to manage tasks to be processed.
+        current_connection: The current client connection being processed.
+        rigs: A list to store fetched IK rigs.
+        retargets: A list to store fetched retargeters.
+
+    Methods:
+        start(port=9999): Starts the server and begins listening for client connections.
+        stop(): Stops the server and closes the socket.
+        on_slate_post_tick(delta_time): Processes tasks from the queue in the main thread.
+        import_fbx(args): Enqueues an FBX import task.
+        import_fbx_animation(args): Enqueues an FBX animation import task.
+        create_ik_rig(mesh_name): Enqueues a task to create an IK rig.
+        retarget_ik_rigs(args): Enqueues a task to retarget IK rigs.
+        fetch_ik_rigs(args): Enqueues a task to fetch IK rigs.
+        fetch_retargets(args): Enqueues a task to fetch IK retargeters.
+        asset_exists(asset_path): Enqueues a task to check if an asset exists.
+        retarget_animation(args): Enqueues a task to retarget an animation.
+        close_server(): Closes the server socket.
+        handle_default(data): Handles default messages.
+        handle_data(data, connection): Handles data received from clients and dispatches tasks.
+        listen_clients(): Listens for client connections and processes incoming data.
+        send_response(connection, message): Sends a response to the client.
+        tick(delta_time): Placeholder for future implementation.
+    """
     def __init__(self):
         self.socket = None
         self.running = False
@@ -47,6 +80,18 @@ class Retargeter:
             unreal.unregister_slate_post_tick_callback(self.slate_post_tick_handle)
     
     def on_slate_post_tick(self, delta_time):
+        """
+        Processes functions from the queue and executes them with the provided arguments. Logs the function name, arguments, and result.
+        We do this in the Slate post-tick callback to ensure that we are executing the queue functions in the main thread.
+        For each function we send a response back to the client with the result of the function.
+        Depending on the incomming function we handle the function calls differently.
+
+        Args:
+            delta_time: The time elapsed since the last tick (currently not used)
+        
+        return:
+            None
+        """
         if (self.queue.size() > 0):
             func, args = self.queue.dequeue()
             unreal.log(f"Calling function {func.__name__} with arguments: {args}")
@@ -69,14 +114,18 @@ class Retargeter:
     def import_fbx(self, args):
         args = args.split(',')
 
-        if len(args) < 2:
-            self.send_response(self.current_connection, "Invalid message format, missing arguments. Expecting: fbx_file_path, destination_path")
-            raise ValueError("Invalid message format, missing arguments. Expecting: fbx_file_path, destination_path")
+        if len(args) < 1:
+            self.send_response(self.current_connection, "Invalid message format, missing arguments. Expecting: fbx_file_path, destination_path (optional)")
+            raise ValueError("Invalid message format, missing arguments. Expecting: fbx_file_path, destination_path (optional)")
 
         # Import FBX file into Unreal Engine
         print("Importing FBX file:", args[0])
-        self.queue.enqueue(skeletalMeshImporter.import_fbx, [args[0], args[1]])
-    
+
+        if len(args) > 1:
+            self.queue.enqueue(skeletalMeshImporter.import_fbx, [args[0], args[1]])
+        else:
+            self.queue.enqueue(skeletalMeshImporter.import_fbx, [args[0]])
+
     def import_fbx_animation(self, args):
         args = args.split(',')
 
@@ -140,7 +189,7 @@ class Retargeter:
         animation_path = args[1]
 
         print("Retargeting animation:", retargeter_path, animation_path)
-        self.queue.enqueue(IKRetargeter.retarget_animation, [retargeter_path, animation_path])
+        self.queue.enqueue(IKRetargeter.retarget_animations, [retargeter_path, animation_path])
 
     def close_server(self):
         # Close the server socket
@@ -249,15 +298,10 @@ class Retargeter:
 retargeter = Retargeter()
 retargeter.start()
 
-# Start listening for clients in a separate thread
-# listen_thread = threading.Thread(target=retargeter.listen_clients)
-# listen_thread.start()
-
 # Keep the program running until user interrupts or signals to stop
 try:
     while True:
         # Keep the main thread alive
         unreal.idle()
-        # retargeter.listen_clients()
 except KeyboardInterrupt:
     retargeter.stop()
