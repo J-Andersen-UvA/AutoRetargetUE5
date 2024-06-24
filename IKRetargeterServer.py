@@ -7,6 +7,7 @@ import simpleQueue
 import skeletalMeshImporter
 import fetchUEInfo
 import animationImporter
+import animationExporter
 import functools
 
 class Retargeter:
@@ -102,7 +103,7 @@ class Retargeter:
             elif func == fetchUEInfo.fetch_retargets:
                 result = func(args)
                 self.retargets = result
-            elif func == IKRetargeter.retarget_animation:
+            elif func == IKRetargeter.retarget_animations:
                 result = func(args)
             else:
                 result = func(*args)
@@ -191,6 +192,15 @@ class Retargeter:
         print("Retargeting animation:", retargeter_path, animation_path)
         self.queue.enqueue(IKRetargeter.retarget_animations, [retargeter_path, animation_path])
 
+    def export_fbx_animation(self, args):
+        args = args.split(',')
+        if len(args) < 2:
+            self.send_response(self.current_connection, "Invalid message format, missing arguments. Expecting: animation_asset_path, export_path, name(optional), ascii(optional), force_front_x_axis(optional)")
+            raise ValueError("Invalid message format, missing arguments. Expecting: animation_asset_path, export_path, name(optional), ascii(optional), force_front_x_axis(optional)")
+
+        print("Exporting animation to FBX:", args[0], args[1])
+        self.queue.enqueue(animationExporter.export_animation, args)
+
     def close_server(self):
         # Close the server socket
         if self.socket:
@@ -234,6 +244,8 @@ class Retargeter:
                 "retarget_animation": self.retarget_animation,
                 "close_server": self.close_server,
                 "stop_server": self.stop,
+                "export_fbx_animation": self.export_fbx_animation,
+                "export_animation": self.export_fbx_animation,
             }
 
             # Call the appropriate handler based on the message type
