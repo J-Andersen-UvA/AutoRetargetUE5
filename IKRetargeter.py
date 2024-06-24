@@ -26,17 +26,31 @@ def get_asset_data(animation):
     return unreal.AssetRegistryHelpers.get_asset_registry().get_asset_by_object_path(animation.get_path_name())
 
 # Retarget an animation using the given retargeter
-def retarget_animation(animation_path: str, retargeter_path: str) -> bool:
-    # Load the animation
+def retarget_animation(retargeter_path: str, animation_path: str, destination_path : str = "/Game/Anims/RetargetedAnimations") -> bool:
+    # Load the animation paths and the retargeter with the source and target meshes
     animation_paths = animation_path.split(',')
     animations = [unreal.EditorAssetLibrary.load_asset(path) for path in animation_paths]
-    print(animations)
     retargeter = unreal.EditorAssetLibrary.load_asset(retargeter_path)
+    if not retargeter:
+        raise ValueError(f"Failed to load retargeter at path {retargeter_path}")
+
     source_mesh = unreal.IKRetargeterController.get_controller(retargeter).get_preview_mesh(unreal.RetargetSourceOrTarget.SOURCE)
     target_mesh = unreal.IKRetargeterController.get_controller(retargeter).get_preview_mesh(unreal.RetargetSourceOrTarget.TARGET)
 
+    # Make sure we are using asset_data for the animations
     animations_asset_data = [get_asset_data(animation) for animation in animations]
-    unreal.IKRetargetBatchOperation.duplicate_and_retarget(animations_asset_data, source_mesh, target_mesh, retargeter, suffix='_retargeted_to_' + target_mesh.get_name())
+    retargeted_assets = unreal.IKRetargetBatchOperation.duplicate_and_retarget(animations_asset_data, source_mesh, target_mesh, retargeter, suffix='_retargeted_to_' + target_mesh.get_name())
+
+    # Move the retargeted animations to the specified destination path
+    for asset_data in retargeted_assets:
+        asset_path = asset_data.get_asset().get_path_name()
+        asset_name = unreal.EditorAssetLibrary.get_path_name_for_loaded_asset(asset_data.get_asset()).split('/')[-1]
+        new_asset_path = destination_path + '/' + asset_name
+        
+        if not unreal.EditorAssetLibrary.rename_asset(asset_path, new_asset_path):
+            raise ValueError(f"Failed to move asset {asset_path} to {new_asset_path}")
+
+    return True
 
 # Example usage
 # print("++++++++++++++")
@@ -50,4 +64,4 @@ def retarget_animation(animation_path: str, retargeter_path: str) -> bool:
 # Retarget an animation using the retargeter
 # anim_path = "/Game/Anims/APPEL_Anim"
 # retargeter_path = "/Game/Retargets/glassesGuyToNemuRTG"
-# retarget_animation(anim_path, retargeter_path)
+# retarget_animation(retargeter_path, anim_path)

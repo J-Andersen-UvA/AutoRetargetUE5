@@ -60,3 +60,9 @@ send_message(message)
 
 # message = "stop_server:"
 # send_message(message)
+
+source_rig_path = '/Game/IKRigs/glassesGuyNewIKRig'
+target_rig_path = '/Game/IKRigs/NemuIKRig'
+anim_path = "/Game/Anims/APPEL_Anim"
+retargeter_path = "/Game/Retargets/glassesGuyToNemuRTG"
+message = (retargeter_path, anim_path)

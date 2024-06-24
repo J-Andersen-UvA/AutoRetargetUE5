@@ -57,6 +57,8 @@ class Retargeter:
             elif func == fetchUEInfo.fetch_retargets:
                 result = func(args)
                 self.retargets = result
+            elif func == IKRetargeter.retarget_animation:
+                result = func(args)
             else:
                 result = func(*args)
 
@@ -128,6 +130,18 @@ class Retargeter:
     def asset_exists(self, asset_path):
         self.queue.enqueue(unreal.EditorAssetLibrary.does_asset_exist, [asset_path])
 
+    def retarget_animation(self, args):
+        args = args.split(',', 1)
+        if len(args) < 2:
+            self.send_response(self.current_connection, "Invalid message format, missing arguments. Expecting: retargeter_path, animation_paths")
+            raise ValueError("Invalid message format, missing arguments. Expecting: retargeter_path, animation_paths")
+
+        retargeter_path = args[0]
+        animation_path = args[1]
+
+        print("Retargeting animation:", retargeter_path, animation_path)
+        self.queue.enqueue(IKRetargeter.retarget_animation, [retargeter_path, animation_path])
+
     def close_server(self):
         # Close the server socket
         if self.socket:
@@ -168,6 +182,7 @@ class Retargeter:
                 "retarget_ik_rigs": self.retarget_ik_rigs,
                 "fetch_ik_rigs": self.fetch_ik_rigs,
                 "fetch_retargets": self.fetch_retargets,
+                "retarget_animation": self.retarget_animation,
                 "close_server": self.close_server,
                 "stop_server": self.stop,
             }
