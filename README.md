@@ -37,6 +37,9 @@ To use the server, follow these steps:
 4. **Client Interaction**:
    - Connect clients to the server using the specified port. Clients can send commands to import files, create rigs, retarget animations, and more.
 
+5. **Running Unreal Engine Headless with Editor functionalities**:
+   - Use command: ```UE_.4\Engine\Binaries\Win64\UnrealEditor.exe project\projectName.uproject -nullrhi -log```. With arguments like ```-game``` and ```-server```, you will not be able to access the needed unreal editor commands for retargeting.
+
 ## Calling functions / Message Format
 Messages sent to the server should follow the format {function}:{arg1},{arg2},.... Each message consists of a function identifier followed by a : and then comma-separated arguments:
 
