@@ -27,7 +27,7 @@ def export_animation(animation_asset_path : str, export_path : str, name : str =
     # Export the animation
     if not unreal.Exporter.run_asset_export_task(task):
         raise ValueError(f"Failed to export animation at path {animation_asset_path}")
-    return True
+    return True, full_export_path
 
 # Usage example
 # print("++++++++++++++")

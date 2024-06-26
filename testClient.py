@@ -67,8 +67,11 @@ def send_message(message, host='localhost', port=9999, timeout=5):
 # retargeter_path = "/Game/Retargets/glassesGuyToNemuRTG"
 # message = (retargeter_path, anim_path)
 
-export_path = "C:/Users/VICON/Desktop/tmp/testAnimExport/"  # Replace with your desired export path
-animation_asset_path = "/Game/Anims/APPEL_Anim"
-name = "appelAnimExported"
-message = f"export_animation:{animation_asset_path},{export_path},{name}"
+# export_path = "C:/Users/VICON/Desktop/tmp/testAnimExport/"  # Replace with your desired export path
+# animation_asset_path = "/Game/Anims/APPEL_Anim"
+# name = "appelAnimExported"
+# message = f"export_animation:{animation_asset_path},{export_path},{name}"
+# send_message(message)
+
+message = "TEST:Hello World!"
 send_message(message)

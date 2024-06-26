@@ -105,11 +105,15 @@ class Retargeter:
                 self.retargets = result
             elif func == IKRetargeter.retarget_animations:
                 result = func(args)
+            elif func == animationExporter.export_animation:
+                result = func(*args)
+                self.send_file(result[1], self.current_connection)
             else:
                 result = func(*args)
 
             unreal.log("Result: " + str(result))
-            self.send_response(self.current_connection, str(result))
+            if not func == animationExporter.export_animation:
+                self.send_response(self.current_connection, str(result))
         pass
     
     def import_fbx(self, args):
@@ -209,7 +213,21 @@ class Retargeter:
 
     def handle_default(self, data):
         # Handle default message
-        print("Received message:", data)
+        print("(Default) Received message:", data)
+    
+    def send_file(self, filepath, connection=None):
+        if connection is None:
+            connection = self.current_connection
+        try:
+            with open(filepath, 'rb') as file:
+                data = file.read()
+                connection.sendall(data)
+            print(f"Sent file: {filepath} to {connection}")
+        except Exception as e:
+            print(f"Failed to send file: {e}")
+            raise e
+        finally:
+            self.send_response(connection, f"File sent: {filepath}")
 
     def handle_data(self, data, connection):
         # Handle data received from client
@@ -246,6 +264,7 @@ class Retargeter:
                 "stop_server": self.stop,
                 "export_fbx_animation": self.export_fbx_animation,
                 "export_animation": self.export_fbx_animation,
+                "send_file": self.send_file,
             }
 
             # Call the appropriate handler based on the message type
