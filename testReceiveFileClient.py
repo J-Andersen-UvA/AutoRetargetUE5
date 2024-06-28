@@ -1,6 +1,6 @@
 import socket
 
-def send_message_and_receive_file(message, host='localhost', port=9999, timeout=5, output_file_path="received_file.fbx"):
+def send_message_and_receive_file(message, host='localhost', port=9999, timeout=5, output_file_path="C:/Users/VICON/Desktop/tmp/testImport/testAnimImported.FBX"):
     # Create a client socket
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.settimeout(timeout)  # Set socket timeout
@@ -34,5 +34,9 @@ def send_message_and_receive_file(message, host='localhost', port=9999, timeout=
         # Close the socket
         client_socket.close()
 
-send_message_and_receive_file("export_fbx_animation:/Game/Anims/APPEL_Anim,C:/Users/VICON/Desktop/tmp/testAnimExport/,appelAnimExported")
-# send_message_and_receive_file("send_file:C:/Users/VICON/Desktop/tmp/testAnimExport/appelAnimExported.fbx")
+# send_message_and_receive_file("export_fbx_animation:/Game/Anims/APPEL_Anim,C:/Users/VICON/Desktop/tmp/testAnimExport/,appelAnimExported")
+
+source_mesh_path = '/Game/SkeletalMeshes/glassesGuyNew/glassesGuyNew'
+target_mesh_path = '/Game/SkeletalMeshes/Nemu/Nemu'
+anim_path = "/Game/Anims/APPEL_Anim"
+send_message_and_receive_file(f"rig_retarget_send:{source_mesh_path},{target_mesh_path},{anim_path}")

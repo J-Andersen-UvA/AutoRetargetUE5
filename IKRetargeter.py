@@ -23,6 +23,11 @@ def create_retargeter(source_rig_path : str, target_rig_path : str, rtg_name : s
     if not source_rig or not target_rig:
         raise ValueError(f"Failed to load source or target rig at path {source_rig_path} or {target_rig_path}")
 
+    # Check if the retargeter already exists
+    existing_retargeter = unreal.EditorAssetLibrary.load_asset('/Game/Retargets/' + rtg_name)
+    if existing_retargeter:
+            unreal.EditorAssetLibrary.delete_asset(existing_retargeter.get_path_name())
+
     # Create the RTG
     rtg = asset_tools.create_asset(asset_name=rtg_name, package_path='/Game/Retargets', asset_class=unreal.IKRetargeter, factory=unreal.IKRetargetFactory())
     rtg_controller = unreal.IKRetargeterController.get_controller(rtg)
@@ -77,6 +82,10 @@ def retarget_animations(retargeter_path: str, animation_paths: str, destination_
         asset_name = unreal.EditorAssetLibrary.get_path_name_for_loaded_asset(asset_data.get_asset()).split('/')[-1]
         new_asset_path = destination_path + '/' + asset_name
         
+        if unreal.EditorAssetLibrary.does_asset_exist(new_asset_path):
+            unreal.EditorAssetLibrary.delete_asset(new_asset_path)
+            unreal.log(f"Deleted existing asset at {new_asset_path}, now going to replace it with the new retargeted asset.")
+
         if not unreal.EditorAssetLibrary.rename_asset(asset_path, new_asset_path):
             raise ValueError(f"Failed to move asset {asset_path} to {new_asset_path}")
 

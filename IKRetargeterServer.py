@@ -112,6 +112,9 @@ class Retargeter:
             elif func == animationExporter.export_animation:
                 result = func(*args)
                 self.send_file(result[1], self.current_connection)
+            elif func == self.rig_retarget_send:
+                args = args[0].split(',')
+                result = func(*args)
             else:
                 result = func(*args)
 
@@ -201,7 +204,9 @@ class Retargeter:
         self.queue.enqueue(IKRetargeter.retarget_animations, [retargeter_path, animation_path])
 
     def export_fbx_animation(self, args):
-        args = args.split(',')
+        if not isinstance(args, list):
+            args = args.split(',')
+
         if len(args) < 2:
             self.send_response(self.current_connection, "Invalid message format, missing arguments. Expecting: animation_asset_path, export_path, name(optional), ascii(optional), force_front_x_axis(optional)")
             raise ValueError("Invalid message format, missing arguments. Expecting: animation_asset_path, export_path, name(optional), ascii(optional), force_front_x_axis(optional)")
@@ -220,7 +225,7 @@ class Retargeter:
         receive_thread.start()
 
     def handle_fbx_receive(self, connection, filename, host='127.0.0.1', port=9998):
-        if host in self.ips:
+        while host in self.ips:
             tmp = host.rsplit(".", 1)
             tmp2 = int(tmp[1]) + 1
             host = tmp[0] + "." + str(tmp2)
@@ -233,25 +238,39 @@ class Retargeter:
     def rig_retarget_send_queue(self, args):
         self.queue.enqueue(self.rig_retarget_send, [args])
 
-    def rig_retarget_send(self, source_rig_path, target_rig_path, animation_path):
+    def rig_retarget_send(self, source_mesh_path, target_mesh_path, animation_path):
         # TODO: Test this function
-        if source_rig_path == "" or target_rig_path == "" or animation_path == "":
-            self.send_response(self.current_connection, "Invalid message format, missing argument(s). Expecting: source_rig_path, target_rig_path, animation_path")
-            raise ValueError("Invalid message format, missing argument(s). Expecting: source_rig_path, target_rig_path, animation_path")
+        if source_mesh_path == "" or target_mesh_path == "" or animation_path == "":
+            self.send_response(self.current_connection, "Invalid message format, missing argument(s). Expecting: source_mesh_path, target_mesh_path, animation_path")
+            raise ValueError("Invalid message format, missing argument(s). Expecting: source_mesh_path, target_mesh_path, animation_path")
 
-        print("Retargeting IK rigs:", source_rig_path, target_rig_path)
-        source_rig_name = source_rig_path.split('/')[-1]
-        target_rig_name = target_rig_path.split('/')[-1]
+        print("Retargeting IK rigs:", source_mesh_path, target_mesh_path)
+        source_rig_name = source_mesh_path.split('/')[-1]
+        target_rig_name = target_mesh_path.split('/')[-1]
         retargeter_name = f"RTG_{source_rig_name}_to_{target_rig_name}"
         retarget_path = f"/Game/Retargets/{retargeter_name}"
-        ikRigCreator.createIKRig(source_rig_name)
-        ikRigCreator.createIKRig(target_rig_name)
-        fetchUEInfo.fetch_rig_with_name(source_rig_name, "/Game/IKRigs")
-        fetchUEInfo.fetch_rig_with_name(target_rig_name, "/Game/IKRigs")
-        IKRetargeter.create_retargeter(source_rig_path, target_rig_path, retargeter_name)
+        animation_name = animation_path.split('/')[-1]
+
+        # Check if the source and target rigs exist
+        if not fetchUEInfo.fetch_rig_with_name(source_rig_name, "/Game/IKRigs"):
+            print("Creating source rig:", source_mesh_path)
+            ikRigCreator.createIKRig(source_rig_name)
+        if not fetchUEInfo.fetch_rig_with_name(target_rig_name, "/Game/IKRigs"):
+            print("Creating target rig:", target_mesh_path)
+            ikRigCreator.createIKRig(target_rig_name)
+
+        source_rig_path = fetchUEInfo.fetch_rig_with_name(source_rig_name, "/Game/IKRigs")
+        target_rig_path = fetchUEInfo.fetch_rig_with_name(target_rig_name, "/Game/IKRigs")
+
+        # Check if the retargeter already exists
+        if not fetchUEInfo.fetch_rig_with_name(retargeter_name, "/Game/Retargets"):
+            print("Creating retargeter:", source_rig_path, target_rig_path, retargeter_name)
+            IKRetargeter.create_retargeter(source_rig_path, target_rig_path, retargeter_name)
+
         IKRetargeter.retarget_animations(retarget_path, animation_path)
-        self.export_fbx_animation(animation_path, self.export_path, f"{source_rig_name}_to_{target_rig_name}_retargeted")
-        self.send_file(f"{self.export_path}{source_rig_name}_to_{target_rig_name}_retargeted.fbx", self.current_connection)
+        self.export_fbx_animation([animation_path, self.export_path, f"{animation_name}_{source_rig_name}_to_{target_rig_name}"])
+        self.queue.enqueue(self.send_file, [f"{self.export_path}{animation_name}_{source_rig_name}_to_{target_rig_name}.fbx", self.current_connection])
+        # self.send_file(f"{self.export_path}{animation_name}_{source_rig_name}_to_{target_rig_name}.fbx", self.current_connection)
 
     def close_server(self):
         # Close the server socket

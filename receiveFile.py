@@ -28,8 +28,8 @@ def receive_file(filepath, host='localhost', port=9998, timeout=5):
                     break
                 file.write(data)
 
-        print('File received successfully.')
-        client_socket.sendall("File received, thanks for doing business".encode('utf-8'))
+        msg = f"File received, path:{filepath}"
+        client_socket.sendall(msg.encode('utf-8'))
 
     except Exception as e:
         print(f"An error occurred: {e}")
