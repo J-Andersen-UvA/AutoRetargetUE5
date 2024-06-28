@@ -62,5 +62,8 @@ Ensure that messages are correctly formatted to avoid errors during command exec
 - stop_server:
 - export_fbx_animation:
 
+## Sending files to the server
+With the "receive_fbx:file_name" command, you can ask the server to wait for a file. The server will respond with a new port number for you to send the file to. Then send the file to the port and the server will respond with the location of the uploaded file. 
+
 ## Server Illustration
 ![RetargetFlowchart](/imgs/retargeterFlowchart.png)
