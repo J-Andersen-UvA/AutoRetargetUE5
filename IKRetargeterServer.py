@@ -8,6 +8,7 @@ import skeletalMeshImporter
 import fetchUEInfo
 import animationImporter
 import animationExporter
+import receiveFile
 import functools
 
 class Retargeter:
@@ -52,6 +53,8 @@ class Retargeter:
         self.current_connection = None
         self.rigs = []
         self.retargets = []
+        self.export_path = "C:/Users/VICON/Desktop/tmp/testAnimExport/"  # Replace with your desired export path
+        self.import_path = "C:/Users/VICON/Desktop/tmp/testImport/"  # Replace with your desired import path
     
     def start(self, port=9999):
         self.running = True
@@ -89,7 +92,7 @@ class Retargeter:
 
         Args:
             delta_time: The time elapsed since the last tick (currently not used)
-        
+
         return:
             None
         """
@@ -205,6 +208,58 @@ class Retargeter:
         print("Exporting animation to FBX:", args[0], args[1])
         self.queue.enqueue(animationExporter.export_animation, args)
 
+    def rig_retarget_send_queue(self, args):
+        self.queue.enqueue(self.rig_retarget_send, [args])
+
+    def receive_fbx(self, filename, connection=None):
+        if connection is None:
+            connection = self.current_connection
+
+        print("Received filename:", filename)
+
+        # Check if we are already processing a file in this thread
+        print("Received filename, opened new thread to wait for file.")
+        receive_thread = threading.Thread(target=self.handle_fbx_receive, args=(connection, filename))
+        receive_thread.start()
+        self.send_response(connection, "Received filename, opened new thread to wait for file.", no_close=True)
+
+    def handle_fbx_receive(self, connection, filename):
+        # Handle file data received from client, this should only be fbx files
+        # Open a socket that receives the file data asynchronously
+        # Save the file data to a file
+        # Send a response to the client with the file path
+        host = 'localhost'
+        self.send_response(connection, f"Listening for file on {host}:{9998}")
+        receiveFile.receive_file(filepath=(self.import_path + filename), port=9998)
+        # try:
+        #     file_path = self.import_path + filename  # Replace with the desired file path
+        #     with open(file_path, "wb") as file:
+        #         while (file_data := connection.recv(1024)):
+        #             file.write(file_data)
+        #     self.send_response(connection, file_path)
+        # except Exception as e:
+        #     self.send_response(connection, f"Error receiving file: {e}")
+
+    def rig_retarget_send(self, source_rig_path, target_rig_path, animation_path):
+        # TODO: Test this function
+        if source_rig_path == "" or target_rig_path == "" or animation_path == "":
+            self.send_response(self.current_connection, "Invalid message format, missing argument(s). Expecting: source_rig_path, target_rig_path, animation_path")
+            raise ValueError("Invalid message format, missing argument(s). Expecting: source_rig_path, target_rig_path, animation_path")
+
+        print("Retargeting IK rigs:", source_rig_path, target_rig_path)
+        source_rig_name = source_rig_path.split('/')[-1]
+        target_rig_name = target_rig_path.split('/')[-1]
+        retargeter_name = f"RTG_{source_rig_name}_to_{target_rig_name}"
+        retarget_path = f"/Game/Retargets/{retargeter_name}"
+        ikRigCreator.createIKRig(source_rig_name)
+        ikRigCreator.createIKRig(target_rig_name)
+        fetchUEInfo.fetch_rig_with_name(source_rig_name, "/Game/IKRigs")
+        fetchUEInfo.fetch_rig_with_name(target_rig_name, "/Game/IKRigs")
+        IKRetargeter.create_retargeter(source_rig_path, target_rig_path, retargeter_name)
+        IKRetargeter.retarget_animations(retarget_path, animation_path)
+        self.export_fbx_animation(animation_path, self.export_path, f"{source_rig_name}_to_{target_rig_name}_retargeted")
+        self.send_file(f"{self.export_path}{source_rig_name}_to_{target_rig_name}_retargeted.fbx", self.current_connection)
+
     def close_server(self):
         # Close the server socket
         if self.socket:
@@ -265,10 +320,13 @@ class Retargeter:
                 "export_fbx_animation": self.export_fbx_animation,
                 "export_animation": self.export_fbx_animation,
                 "send_file": self.send_file,
+                "rig_retarget_send": self.rig_retarget_send_queue,
+                "receive_fbx": functools.partial(self.receive_fbx, connection=connection),
             }
 
             # Call the appropriate handler based on the message type
             handler = message_handlers.get(message_type, self.handle_default)
+
             if message_content == "" or message_content == None:
                 handler()
             else:
@@ -292,35 +350,51 @@ class Retargeter:
 
 
     def listen_clients(self):
-        # Wait for incoming connections
+        """
+        The method listens for client connections and handles them in separate threads.
+        Especially for the file transfer we need to be able to handle multiple connections at the same time.
+        """
         while self.running and self.socket:
-            connection = None
             try:
                 connection, client_address = self.socket.accept()
                 print('Connection from', client_address)
                 
-                # Receive data from client
-                data = connection.recv(1024)
-                if data:
-                    self.handle_data(data, connection)
-                    
+                # In order to start a new thread later on, we need to communicate with current connections
+                # in a thread-safe way.
+                client_thread = threading.Thread(target=self.client_handler, args=(connection,))
+                client_thread.start()
                 
             except Exception as e:
-                # Check if socket is still valid before breaking out of loop
                 if self.socket:
                     print("Error accepting connection:", e)
                 break
-            # finally:
-            #     if connection:
-            #         connection.close()
 
-    def send_response(self, connection, message):
+    def client_handler(self, connection):
+        """
+        This method handles client data.
+        """
+        try:
+            while True:
+                data = connection.recv(1024)
+                if data:
+                    self.handle_data(data, connection)
+                else:
+                    break
+        except Exception as e:
+            print("Error in client handler:", e)
+        # finally:
+        #     connection.close()
+
+
+    def send_response(self, connection, message, no_close=False):
         try:
             connection.sendall(message.encode('utf-8'))
         except Exception as e:
             print(f"Error sending response: {e}")
         finally:
-            connection.close()
+            if not no_close:
+                print("Closing connection")
+                connection.close()
 
     def tick(self, delta_time):
         pass
