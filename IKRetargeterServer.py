@@ -55,6 +55,7 @@ class Retargeter:
         self.retargets = []
         self.export_path = "C:/Users/VICON/Desktop/tmp/testAnimExport/"  # Replace with your desired export path
         self.import_path = "C:/Users/VICON/Desktop/tmp/testImport/"  # Replace with your desired import path
+        self.ips = []
     
     def start(self, port=9999):
         self.running = True
@@ -208,9 +209,6 @@ class Retargeter:
         print("Exporting animation to FBX:", args[0], args[1])
         self.queue.enqueue(animationExporter.export_animation, args)
 
-    def rig_retarget_send_queue(self, args):
-        self.queue.enqueue(self.rig_retarget_send, [args])
-
     def receive_fbx(self, filename, connection=None):
         if connection is None:
             connection = self.current_connection
@@ -218,27 +216,22 @@ class Retargeter:
         print("Received filename:", filename)
 
         # Check if we are already processing a file in this thread
-        print("Received filename, opened new thread to wait for file.")
         receive_thread = threading.Thread(target=self.handle_fbx_receive, args=(connection, filename))
         receive_thread.start()
-        self.send_response(connection, "Received filename, opened new thread to wait for file.", no_close=True)
 
-    def handle_fbx_receive(self, connection, filename):
-        # Handle file data received from client, this should only be fbx files
-        # Open a socket that receives the file data asynchronously
-        # Save the file data to a file
-        # Send a response to the client with the file path
-        host = 'localhost'
-        self.send_response(connection, f"Listening for file on {host}:{9998}")
-        receiveFile.receive_file(filepath=(self.import_path + filename), port=9998)
-        # try:
-        #     file_path = self.import_path + filename  # Replace with the desired file path
-        #     with open(file_path, "wb") as file:
-        #         while (file_data := connection.recv(1024)):
-        #             file.write(file_data)
-        #     self.send_response(connection, file_path)
-        # except Exception as e:
-        #     self.send_response(connection, f"Error receiving file: {e}")
+    def handle_fbx_receive(self, connection, filename, host='127.0.0.1', port=9998):
+        if host in self.ips:
+            tmp = host.rsplit(".", 1)
+            tmp2 = int(tmp[1]) + 1
+            host = tmp[0] + "." + str(tmp2)
+
+        self.ips.append(host)
+        self.send_response(connection, f"Listening for file on {host}:{port}")
+        receiveFile.receive_file(filepath=(self.import_path + filename), host=host, port=port)
+        self.ips.remove(host)
+
+    def rig_retarget_send_queue(self, args):
+        self.queue.enqueue(self.rig_retarget_send, [args])
 
     def rig_retarget_send(self, source_rig_path, target_rig_path, animation_path):
         # TODO: Test this function
