@@ -36,6 +36,23 @@ def fetch_rig_with_name(name, search_paths=["/Game"]):
     
     return False
 
+def fetch_retargets_with_name(name, search_paths=["/Game"]):
+    # Use the AssetRegistry to find all assets of the specified type
+    asset_registry = unreal.AssetRegistryHelpers.get_asset_registry()
+
+    if not isinstance(search_paths, list):
+        search_paths = [search_paths]
+    
+    for search_path in search_paths:
+        print(f"Searching for retargets with name {name} in: {search_path}")
+        asset_data_list = asset_registry.get_assets_by_path(search_path)
+        
+        for asset_data in asset_data_list:
+            if asset_data.asset_class_path.asset_name == "IKRetargeter" and name in str(asset_data.package_name):
+                return str(asset_data.package_name)
+    
+    return False
+
 def fetch_retargets(search_paths=["/Game"]):
     retarget_filepaths = []
     

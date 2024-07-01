@@ -112,6 +112,7 @@ class Retargeter:
             elif func == animationExporter.export_animation:
                 result = func(*args)
                 self.send_file(result[1], self.current_connection)
+                # return
             elif func == self.rig_retarget_send:
                 args = args[0].split(',')
                 result = func(*args)
@@ -119,7 +120,9 @@ class Retargeter:
                 result = func(*args)
 
             unreal.log("Result: " + str(result))
-            if not func == animationExporter.export_animation:
+            if func != animationExporter.export_animation and func != self.rig_retarget_send:
+                print("func name: ", func.__name__)
+                print("Sending response and closing connection...")
                 self.send_response(self.current_connection, str(result))
         pass
     
@@ -248,29 +251,30 @@ class Retargeter:
         source_rig_name = source_mesh_path.split('/')[-1]
         target_rig_name = target_mesh_path.split('/')[-1]
         retargeter_name = f"RTG_{source_rig_name}_to_{target_rig_name}"
-        retarget_path = f"/Game/Retargets/{retargeter_name}"
         animation_name = animation_path.split('/')[-1]
 
-        # Check if the source and target rigs exist
-        if not fetchUEInfo.fetch_rig_with_name(source_rig_name, "/Game/IKRigs"):
-            print("Creating source rig:", source_mesh_path)
-            ikRigCreator.createIKRig(source_rig_name)
-        if not fetchUEInfo.fetch_rig_with_name(target_rig_name, "/Game/IKRigs"):
-            print("Creating target rig:", target_mesh_path)
-            ikRigCreator.createIKRig(target_rig_name)
-
+        # Check if the source and target rigs exist, if not create them
         source_rig_path = fetchUEInfo.fetch_rig_with_name(source_rig_name, "/Game/IKRigs")
         target_rig_path = fetchUEInfo.fetch_rig_with_name(target_rig_name, "/Game/IKRigs")
+        if not source_rig_path:
+            print("Creating source rig:", source_mesh_path)
+            ikRigCreator.createIKRig(source_rig_name)
+            source_rig_path = fetchUEInfo.fetch_rig_with_name(source_rig_name, "/Game/IKRigs")
+        if not target_rig_path:
+            print("Creating target rig:", target_mesh_path)
+            target_rig_path = ikRigCreator.createIKRig(target_rig_name)
+            target_rig_path = fetchUEInfo.fetch_rig_with_name(target_rig_name, "/Game/IKRigs")
 
+        retarget_path = fetchUEInfo.fetch_retargets_with_name(retargeter_name, "/Game/Retargets")
         # Check if the retargeter already exists
-        if not fetchUEInfo.fetch_rig_with_name(retargeter_name, "/Game/Retargets"):
+        if not retarget_path:
             print("Creating retargeter:", source_rig_path, target_rig_path, retargeter_name)
-            IKRetargeter.create_retargeter(source_rig_path, target_rig_path, retargeter_name)
+            if not IKRetargeter.create_retargeter(source_rig_path, target_rig_path, retargeter_name):
+                raise ValueError(f"Failed to create retargeter at path /Game/Retargets/{retargeter_name}")
+            retarget_path = fetchUEInfo.fetch_retargets_with_name(retargeter_name, "/Game/Retargets")
 
         IKRetargeter.retarget_animations(retarget_path, animation_path)
         self.export_fbx_animation([animation_path, self.export_path, f"{animation_name}_{source_rig_name}_to_{target_rig_name}"])
-        self.queue.enqueue(self.send_file, [f"{self.export_path}{animation_name}_{source_rig_name}_to_{target_rig_name}.fbx", self.current_connection])
-        # self.send_file(f"{self.export_path}{animation_name}_{source_rig_name}_to_{target_rig_name}.fbx", self.current_connection)
 
     def close_server(self):
         # Close the server socket
@@ -294,7 +298,8 @@ class Retargeter:
             print(f"Failed to send file: {e}")
             raise e
         finally:
-            self.send_response(connection, f"File sent: {filepath}")
+            # self.send_response(connection, f"File sent: {filepath}")
+            connection.close()
 
     def handle_data(self, data, connection):
         # Handle data received from client

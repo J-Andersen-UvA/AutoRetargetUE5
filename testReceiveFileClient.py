@@ -1,6 +1,6 @@
 import socket
 
-def send_message_and_receive_file(message, host='localhost', port=9999, timeout=5, output_file_path="C:/Users/VICON/Desktop/tmp/testImport/testAnimImported.FBX"):
+def send_message_and_receive_file(message, host='localhost', port=9999, timeout=5, output_file_path="C:/Users/VICON/Desktop/tmp/test/testAnimImported.FBX"):
     # Create a client socket
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.settimeout(timeout)  # Set socket timeout
@@ -17,11 +17,19 @@ def send_message_and_receive_file(message, host='localhost', port=9999, timeout=
         # Open a file to write the received data
         with open(output_file_path, 'wb') as output_file:
             while True:
-                # Receive data from the server
-                data = client_socket.recv(4096)  # Adjust buffer size as needed
-                if not data:
-                    break  # No more data to receive
-                output_file.write(data)
+                try:
+                    # Receive data from the server
+                    data = client_socket.recv(4096)  # Adjust buffer size as needed
+                    if not data:
+                        break  # No more data to receive
+                    output_file.write(data)
+                except socket.error as e:
+                    # Handle the connection reset by the server as end of file transfer
+                    if e.errno == 10054:
+                        print("Connection closed by the server.")
+                        break
+                    else:
+                        raise  # Re-raise the exception if it's not the specific error
         
         print(f"File received and saved as: {output_file_path}")
         
