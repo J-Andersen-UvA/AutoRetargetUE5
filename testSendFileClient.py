@@ -61,14 +61,22 @@ def send_file(file_path, host='localhost', port=9999, timeout=5):
         # Open the file and send its contents
         with open(file_path, 'rb') as file:
             while (file_data := file.read(1024)):
-                client_socket.sendall(file_data)
-        
+                try:
+                    client_socket.sendall(file_data)
+                except socket.error as e:
+                    # Handle the connection reset by the server as end of file transfer
+                    if e.errno == 10054:
+                        print("Connection closed by the server.")
+                        break
+                    else:
+                        raise  # Re-raise the exception if it's not the specific error
+
         print("File sent successfully:", file_path)
         
         # Receive the response
-        response = client_socket.recv(1024)
-        if response:
-            print("Response received:", response.decode('utf-8'))
+        # response = client_socket.recv(1024)
+        # if response:
+        #     print("Response received:", response.decode('utf-8'))
             # Further processing logic based on the response
             
     except socket.timeout:
