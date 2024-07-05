@@ -1,6 +1,6 @@
 import socket
 
-def receive_file(filepath, host='localhost', port=9998, timeout=5):
+def receive_file(filepath, host='0.0.0.0', port=8071, timeout=5):
     # Create a socket object
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 

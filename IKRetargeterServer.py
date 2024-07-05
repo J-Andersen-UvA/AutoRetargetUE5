@@ -57,11 +57,11 @@ class Retargeter:
         self.import_path = "C:/Users/VICON/Desktop/tmp/testImport/"  # Replace with your desired import path
         self.ips = []
     
-    def start(self, port=9999):
+    def start(self, host="0.0.0.0", port=8070):
         self.running = True
         # Start the server socket in a separate thread
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind(('localhost', port))
+        self.socket.bind((host, port))
         self.socket.listen(1)
         print("Retargeter started. Listening on port", port)
         
@@ -227,14 +227,14 @@ class Retargeter:
         receive_thread = threading.Thread(target=self.handle_fbx_receive, args=(connection, filename))
         receive_thread.start()
 
-    def handle_fbx_receive(self, connection, filename, host='127.0.0.1', port=9998):
+    def handle_fbx_receive(self, connection, filename, host='127.0.0.1', port=8071):
         while host in self.ips:
             tmp = host.rsplit(".", 1)
             tmp2 = int(tmp[1]) + 1
             host = tmp[0] + "." + str(tmp2)
 
         self.ips.append(host)
-        self.send_response(connection, f"Listening for file on {host}:{port}")
+        self.send_response(connection, f"Listening for file on {port}")
         receiveFile.receive_file(filepath=(self.import_path + filename), host=host, port=port)
         self.ips.remove(host)
 
