@@ -92,4 +92,4 @@ def send_file(file_path, host='localhost', port=9999, timeout=5):
 file_path = "C:/Users/VICON/Desktop/MathijsTestData/AnimNoMesh.FBX"  # Replace with your FBX file path
 
 # Send the file
-send_file(file_path)
+send_file(file_path, host='localhost', port=7000, timeout=5)
