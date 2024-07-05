@@ -1,6 +1,6 @@
 import socket
 
-def send_message(message, host='localhost', port=9999, timeout=5):
+def send_message(message, host='localhost', port=8070, timeout=5):
     # Create a client socket
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.settimeout(timeout)  # Set socket timeout

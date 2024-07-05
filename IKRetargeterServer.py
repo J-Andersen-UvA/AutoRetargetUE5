@@ -319,8 +319,6 @@ class Retargeter:
                 self.send_response(connection, "Invalid message format, missing ':'")
                 raise ValueError("Invalid message format, missing ':'")
 
-            self.send_response(connection, "Received message", no_close=True)
-
             message_type = parts[0]
             message_content = parts[1]
             self.current_connection = connection
