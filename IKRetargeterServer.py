@@ -276,6 +276,11 @@ class Retargeter:
         IKRetargeter.retarget_animations(retarget_path, animation_path)
         self.export_fbx_animation([animation_path, self.export_path, f"{animation_name}_{source_rig_name}_to_{target_rig_name}"])
 
+    def fetch_files(self, folder_path):
+        # Fetch all files in the specified folder
+        print("Fetching files in folder:", folder_path)
+        self.queue.enqueue(fetchUEInfo.fetch_all_assets_in_path, [folder_path])
+
     def close_server(self):
         # Close the server socket
         if self.socket:
@@ -341,6 +346,7 @@ class Retargeter:
                 "send_file": self.send_file,
                 "rig_retarget_send": self.rig_retarget_send_queue,
                 "receive_fbx": functools.partial(self.receive_fbx, connection=connection),
+                "fetch_files": self.fetch_files,  # Add fetch_files handler
             }
 
             # Call the appropriate handler based on the message type

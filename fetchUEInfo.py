@@ -72,6 +72,10 @@ def fetch_retargets(search_paths=["/Game"]):
     
     return retarget_filepaths
 
+def fetch_all_assets_in_path(path="/Game"):
+    asset_registry = unreal.AssetRegistryHelpers.get_asset_registry()
+    return asset_registry.get_assets_by_path(path)
+
 # Example usage:
 # You can specify multiple search paths if needed
 # search_paths = ['/Game/IKRigs']

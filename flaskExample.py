@@ -24,6 +24,7 @@ def index():
         <h1>Run Python Scripts</h1>
         <button onclick="runScript('script1')" type="button">Send a file</button>
         <button onclick="runScript('script2')" type="button">Retarget the file</button>
+        <button onclick="runScript('fetch_files')" type="button">Fetch Files</button>
     </body>
     </html>
     '''
@@ -39,6 +40,10 @@ def run_script2():
     result = subprocess.run(['python', 'testReceiveFileClient.py'], capture_output=True, text=True)
     return jsonify(output=result.stdout)
 
+@app.route('/run_fetch_files')
+def run_fetch_files():
+    result = subprocess.run(['python', 'fetchFilesClient.py'], capture_output=True, text=True)
+    return jsonify(output=result.stdout)
+
 if __name__ == "__main__":
     app.run(debug=True)
-
