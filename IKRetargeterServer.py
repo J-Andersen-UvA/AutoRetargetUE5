@@ -10,6 +10,7 @@ import animationImporter
 import animationExporter
 import receiveFile
 import functools
+import os
 
 class Retargeter:
     """
@@ -53,9 +54,15 @@ class Retargeter:
         self.current_connection = None
         self.rigs = []
         self.retargets = []
+        self.ips = []
         self.export_path = "C:/Users/VICON/Desktop/tmp/testAnimExport/"  # Replace with your desired export path
         self.import_path = "C:/Users/VICON/Desktop/tmp/testImport/"  # Replace with your desired import path
-        self.ips = []
+
+        # Check if running inside Docker
+        if os.path.exists("/.dockerenv"):
+            self.export_path = "/usr/src/your_project/export/"  # Update with Docker export path
+            self.import_path = "/usr/src/your_project/import/"  # Update with Docker import path
+
     
     def start(self, host="0.0.0.0", port=8070):
         self.running = True

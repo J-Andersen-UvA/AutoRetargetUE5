@@ -1,7 +1,7 @@
 import socket
 import os
 
-def send_message(message, host='localhost', port=9999, timeout=5):
+def send_message(message, host='localhost', port=8070, timeout=5):
     # Create a client socket
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.settimeout(timeout)  # Set socket timeout
@@ -32,7 +32,7 @@ def send_message(message, host='localhost', port=9999, timeout=5):
         client_socket.close()
         return data
 
-def send_file(file_path, host='localhost', port=9999, timeout=5):
+def send_file(file_path, host='localhost', port=8070, timeout=5):
     # Check if file exists
     if not os.path.isfile(file_path):
         print("File does not exist:", file_path)
@@ -92,4 +92,4 @@ def send_file(file_path, host='localhost', port=9999, timeout=5):
 file_path = "C:/Users/VICON/Desktop/MathijsTestData/AnimNoMesh.FBX"  # Replace with your FBX file path
 
 # Send the file
-send_file(file_path, host='localhost', port=7000, timeout=5)
+send_file(file_path, host='localhost', port=8070, timeout=5)
