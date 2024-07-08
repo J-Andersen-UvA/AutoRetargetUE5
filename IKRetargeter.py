@@ -1,4 +1,5 @@
 import unreal
+import fetchUEInfo
 
 # Using 2 IK-rigs, create a retargeter between them
 def create_retargeter(source_rig_path : str, target_rig_path : str, rtg_name : str="RTG") -> bool:
@@ -28,13 +29,18 @@ def create_retargeter(source_rig_path : str, target_rig_path : str, rtg_name : s
         unreal.EditorAssetLibrary.make_directory('/Game/Retargets')
 
     # Check if the retargeter already exists
-    existing_retargeter = unreal.EditorAssetLibrary.load_asset('/Game/Retargets/' + rtg_name)
-    if existing_retargeter:
-            unreal.EditorAssetLibrary.delete_asset(existing_retargeter.get_path_name())
+    current_rtg = fetchUEInfo.fetch_retargets_with_name(rtg_name, "/Game/Retargets")
+    if current_rtg != False:
+        print(f"Retargeter present at /Game/Retargets/{rtg_name}. Removing and creating new one...")
+        existing_retargeter = unreal.EditorAssetLibrary.load_asset('/Game/Retargets/' + rtg_name)
+        unreal.EditorAssetLibrary.delete_asset(existing_retargeter.get_path_name())
 
+    print("Creating retargeter...")
     # Create the RTG
     rtg = asset_tools.create_asset(asset_name=rtg_name, package_path='/Game/Retargets', asset_class=unreal.IKRetargeter, factory=unreal.IKRetargetFactory())
     rtg_controller = unreal.IKRetargeterController.get_controller(rtg)
+    
+    print("Setting IK rigs...")
     rtg_controller.set_ik_rig(unreal.RetargetSourceOrTarget.SOURCE, source_rig)
     rtg_controller.set_ik_rig(unreal.RetargetSourceOrTarget.TARGET, target_rig)
 
@@ -48,6 +54,7 @@ def create_retargeter(source_rig_path : str, target_rig_path : str, rtg_name : s
     # Auto align bones
     rtg_controller.auto_align_all_bones(unreal.RetargetSourceOrTarget.SOURCE)
 
+    print(f"Retargeter created at /Game/Retargets/{rtg_name}.")
     return True
 
 # Helper function to convert AnimSequence to AssetData

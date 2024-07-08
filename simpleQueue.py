@@ -2,9 +2,12 @@ class Queue:
     def __init__(self):
         self.items = []
 
-    def enqueue(self, func, args):
+    def enqueue(self, func, args, connection=None):
         """Add an item to the end of the queue."""
-        self.items.append((func, args))
+        if connection:
+            self.items.append((func, args, connection))
+        else:
+            self.items.append((func, args))
 
     def dequeue(self):
         """Remove and return the front item of the queue."""

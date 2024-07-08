@@ -64,7 +64,6 @@ class Retargeter:
             self.export_path = "/usr/src/your_project/exports/"  # Update with Docker export path
             self.import_path = "/usr/src/your_project/imports/"  # Update with Docker import path
 
-    
     def start(self, host="0.0.0.0", port=8070):
         self.running = True
         # Start the server socket in a separate thread
@@ -106,8 +105,19 @@ class Retargeter:
             None
         """
         if (self.queue.size() > 0):
-            func, args = self.queue.dequeue()
-            unreal.log(f"Calling function {func.__name__} with arguments: {args}")
+            # Dequeue the item from the queue
+            dequeued_item = self.queue.dequeue()
+            
+            if len(dequeued_item) == 2:
+                func, args = dequeued_item
+                unreal.log(f"Calling function {func.__name__} with arguments: {args}")
+            elif len(dequeued_item) == 3:
+                func, args, connection = dequeued_item
+                unreal.log(f"Calling function {func.__name__} with arguments: {args}")
+                # Use 'connection' if needed
+            else:
+                # Handle unexpected case where length is not 2 or 3
+                unreal.log_error("Unexpected number of values returned from queue.dequeue()")
 
             if func == fetchUEInfo.fetch_ik_rigs:
                 result = func(args)
@@ -119,7 +129,7 @@ class Retargeter:
                 result = func(args)
             elif func == animationExporter.export_animation:
                 result = func(*args)
-                self.send_file(result[1], self.current_connection)
+                self.send_file(result[1], connection)
                 # return
             elif func == self.rig_retarget_send:
                 args = args[0].split(',')
@@ -223,7 +233,7 @@ class Retargeter:
             raise ValueError("Invalid message format, missing arguments. Expecting: animation_asset_path, export_path, name(optional), ascii(optional), force_front_x_axis(optional)")
 
         print("Exporting animation to FBX:", args[0], args[1])
-        self.queue.enqueue(animationExporter.export_animation, args)
+        self.queue.enqueue(animationExporter.export_animation, args, connection=self.current_connection)
 
     def receive_fbx(self, filename, connection=None):
         if connection is None:
@@ -322,6 +332,7 @@ class Retargeter:
                 data = file.read()
                 connection.sendall(data)
             print(f"Sent file: {filepath} to {connection}")
+            connection.sendall(b"EOF")
         except Exception as e:
             print(f"Failed to send file: {e}")
             raise e

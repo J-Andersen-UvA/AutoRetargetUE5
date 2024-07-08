@@ -14,6 +14,7 @@ def send_message_and_receive_file(message, host='localhost', port=8070, timeout=
         
         print("Message sent successfully:", message)
         
+        print("Receiving file...")
         # Open a file to write the received data
         with open(output_file_path, 'wb') as output_file:
             while True:
@@ -22,6 +23,9 @@ def send_message_and_receive_file(message, host='localhost', port=8070, timeout=
                     data = client_socket.recv(4096)  # Adjust buffer size as needed
                     if not data:
                         break  # No more data to receive
+                    if b"EOF" in data:
+                        print("File received.")
+                        break
                     output_file.write(data)
                 except socket.error as e:
                     # Handle the connection reset by the server as end of file transfer
