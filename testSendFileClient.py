@@ -1,5 +1,6 @@
 import socket
 import os
+import time
 
 def send_message(message, host='localhost', port=8070, timeout=5):
     # Create a client socket
@@ -53,6 +54,9 @@ def send_file(file_path, host='localhost', port=8070, timeout=5):
     client_socket.settimeout(timeout)  # Set socket timeout
 
     print("Sending file:", file_path, "to port:", port)
+
+    time.sleep(2)
+
     try:
         # Connect to the server
         client_socket.connect((host, port))
@@ -60,11 +64,9 @@ def send_file(file_path, host='localhost', port=8070, timeout=5):
 
         # Open the file and send its contents
         with open(file_path, 'rb') as file:
-            print("Sending file data...")
             while (file_data := file.read(1024)):
                 try:
                     client_socket.sendall(file_data)
-                    print("Data sent:", len(file_data), "bytes")
                 except socket.error as e:
                     # Handle the connection reset by the server as end of file transfer
                     if e.errno == 10054:

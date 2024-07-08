@@ -1,6 +1,6 @@
 import socket
 
-def receive_file(filepath, host='0.0.0.0', port=8071, accept_timeout=10, recv_timeout=5):
+def open_listen_socket(host='0.0.0.0', port=8071, accept_timeout=10):
     # Create a socket object
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -13,11 +13,14 @@ def receive_file(filepath, host='0.0.0.0', port=8071, accept_timeout=10, recv_ti
     # Listen for incoming connections
     server_socket.listen(1)
 
-    print(f'Waiting for a connection on port {port}...')
-
     # Set the accept timeout
     server_socket.settimeout(accept_timeout)
 
+    print(f'Waiting for a connection on port {port}...')
+    
+    return server_socket
+
+def receive_file(filepath, server_socket, recv_timeout=5):
     try:
         # Accept a connection from a client
         client_socket, client_address = server_socket.accept()

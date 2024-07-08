@@ -241,8 +241,9 @@ class Retargeter:
             self.send_response(connection, "No available port for file transfer.")
             return
 
+        server_sock = receiveFile.open_listen_socket(host, port)
         self.send_response(connection, f"Listening for file on {port}")
-        receiveFile.receive_file(filepath=(self.import_path + filename), host=host, port=port)
+        receiveFile.receive_file(filepath=(self.import_path + filename), server_socket=server_sock)
 
         # Release port
         with self.lock:
