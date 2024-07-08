@@ -61,8 +61,8 @@ class Retargeter:
 
         # Check if running inside Docker
         if os.path.exists("/.dockerenv"):
-            self.export_path = "/usr/src/your_project/export/"  # Update with Docker export path
-            self.import_path = "/usr/src/your_project/import/"  # Update with Docker import path
+            self.export_path = "/usr/src/your_project/exports/"  # Update with Docker export path
+            self.import_path = "/usr/src/your_project/imports/"  # Update with Docker import path
 
     
     def start(self, host="0.0.0.0", port=8070):
