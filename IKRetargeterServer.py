@@ -54,7 +54,8 @@ class Retargeter:
         self.current_connection = None
         self.rigs = []
         self.retargets = []
-        self.ips = []
+        self.ports = {8071: True, 8072: True, 8073: True}
+        self.lock = threading.Lock()
         self.export_path = "C:/Users/VICON/Desktop/tmp/testAnimExport/"  # Replace with your desired export path
         self.import_path = "C:/Users/VICON/Desktop/tmp/testImport/"  # Replace with your desired import path
 
@@ -234,16 +235,30 @@ class Retargeter:
         receive_thread = threading.Thread(target=self.handle_fbx_receive, args=(connection, filename))
         receive_thread.start()
 
-    def handle_fbx_receive(self, connection, filename, host='127.0.0.1', port=8071):
-        while host in self.ips:
-            tmp = host.rsplit(".", 1)
-            tmp2 = int(tmp[1]) + 1
-            host = tmp[0] + "." + str(tmp2)
+    def handle_fbx_receive(self, connection, filename, host='0.0.0.0'):
+        port = self.get_free_port()
+        if port is None:
+            self.send_response(connection, "No available port for file transfer.")
+            return
 
-        self.ips.append(host)
         self.send_response(connection, f"Listening for file on {port}")
         receiveFile.receive_file(filepath=(self.import_path + filename), host=host, port=port)
-        self.ips.remove(host)
+
+        # Release port
+        with self.lock:
+            self.ports[port] = True
+        print(f"Port {port} released.")
+    
+    def get_free_port(self, start_port=8071):
+        with self.lock:
+            for port in range(start_port, start_port + len(self.ports)):
+                if self.ports.get(port):
+                    # Set the port to be in use
+                    self.ports[port] = False
+                    print(f"Port {port} allocated.")
+                    return port
+            print("No free port found.")
+            return None
 
     def rig_retarget_send_queue(self, args):
         self.queue.enqueue(self.rig_retarget_send, [args])

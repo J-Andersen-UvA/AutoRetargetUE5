@@ -42,27 +42,29 @@ def send_file(file_path, host='localhost', port=8070, timeout=5):
 
     # Send the filename first
     msg = send_message(f"receive_fbx:{file_name}", host, port, timeout)
-    if "Listening for file on" in msg:
-        data = msg.split("Listening for file on ")[-1].split(":")
-        host = data[0]
-        port = int(data[1])
-    else:
+    if not "Listening for file on" in msg:
         print("Error:", msg)
         return
+
+    port = int(msg.split("Listening for file on ")[-1])
 
     # Create a client socket
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.settimeout(timeout)  # Set socket timeout
 
+    print("Sending file:", file_path, "to port:", port)
     try:
         # Connect to the server
         client_socket.connect((host, port))
-        
+        print("Connected to the server.")
+
         # Open the file and send its contents
         with open(file_path, 'rb') as file:
+            print("Sending file data...")
             while (file_data := file.read(1024)):
                 try:
                     client_socket.sendall(file_data)
+                    print("Data sent:", len(file_data), "bytes")
                 except socket.error as e:
                     # Handle the connection reset by the server as end of file transfer
                     if e.errno == 10054:
