@@ -23,6 +23,10 @@ def create_retargeter(source_rig_path : str, target_rig_path : str, rtg_name : s
     if not source_rig or not target_rig:
         raise ValueError(f"Failed to load source or target rig at path {source_rig_path} or {target_rig_path}")
 
+    # Check if folder /Game/Retargets exists, if not create it
+    if not unreal.EditorAssetLibrary.does_directory_exist('/Game/Retargets'):
+        unreal.EditorAssetLibrary.make_directory('/Game/Retargets')
+
     # Check if the retargeter already exists
     existing_retargeter = unreal.EditorAssetLibrary.load_asset('/Game/Retargets/' + rtg_name)
     if existing_retargeter:

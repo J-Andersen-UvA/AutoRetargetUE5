@@ -41,7 +41,7 @@ def receive_file(filepath, server_socket, recv_timeout=5):
         client_socket.sendall(msg.encode('utf-8'))
 
     except socket.timeout:
-        print(f"Timeout: No connection within {accept_timeout} seconds.")
+        print(f"Timeout: No connection within ... seconds.")
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
