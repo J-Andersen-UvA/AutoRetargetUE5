@@ -60,10 +60,13 @@ Ensure that messages are correctly formatted to avoid errors during command exec
 - retarget_animation:retargeter_path,animation_path1,animation_path2,...
 - close_server:
 - stop_server:
-- export_fbx_animation:
+- export_fbx_animation:animation_asset_path,export_path,name(optional),ascii(optional),force_front_x_axis(optional)
 
 ## Sending files to the server
 With the "receive_fbx:file_name" command, you can ask the server to wait for a file. The server will respond with a new port number for you to send the file to. Then send the file to the port and the server will respond with the location of the uploaded file. 
+
+## Receiving files from the server
+With the "export_fbx_animation:animation_asset_path,export_path,name(optional),ascii(optional),force_front_x_axis(optional)" command, you can ask the server to send over a file. The Unreal Engine instance will export it to a folder within the host computer or within the docker container. Afterwards, it will send the file to the connection that commanded the export. The transport ends with an "EOF" message. 
 
 ## Server Illustration
 ![RetargetFlowchart](/imgs/retargeterFlowchart.png)
