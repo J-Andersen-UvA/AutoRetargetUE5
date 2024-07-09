@@ -1,6 +1,6 @@
 import socket
 
-def send_message(message, host='localhost', port=9999, timeout=5):
+def send_message(message, host='localhost', port=8070, timeout=5):
     # Create a client socket
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.settimeout(timeout)  # Set socket timeout
@@ -73,5 +73,8 @@ def send_message(message, host='localhost', port=9999, timeout=5):
 # message = f"export_animation:{animation_asset_path},{export_path},{name}"
 # send_message(message)
 
-message = "TEST:Hello World!"
-send_message(message)
+# message = "TEST:Hello World!"
+# send_message(message)
+
+msg = "import_fbx_from_url:https://leffe.science.uva.nl:8043/gebarenoverleg_media/fbx/ERROR-SC.fbx"
+send_message(msg)

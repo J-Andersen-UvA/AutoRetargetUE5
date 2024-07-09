@@ -1,13 +1,18 @@
+class QueueItem:
+    def __init__(self, func, args, connection=None, connection_type=None):
+        self.func = func
+        self.args = args
+        self.connection = connection
+        self.connection_type = connection_type
+
 class Queue:
     def __init__(self):
         self.items = []
 
-    def enqueue(self, func, args, connection=None):
+    def enqueue(self, func, args, connection=None, connection_type=None):
         """Add an item to the end of the queue."""
-        if connection:
-            self.items.append((func, args, connection))
-        else:
-            self.items.append((func, args))
+        item = QueueItem(func, args, connection, connection_type)
+        self.items.append(item)
 
     def dequeue(self):
         """Remove and return the front item of the queue."""
