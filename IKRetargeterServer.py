@@ -335,6 +335,14 @@ class Retargeter:
 
         print(f"Downloading file from URL: {url}")
         file_name = url.split('/')[-1]
+
+        if file_name == "":
+            self.send_response(self.current_connection, "Invalid URL format, unable to extract file name.")
+            raise ValueError("Invalid URL format, unable to extract file name.")
+        if os.path.exists(destination_path + file_name):
+            self.send_response(self.current_connection, f"File already exists at path({destination_path + file_name}).")
+            return
+
         if receiveFile.download_file_from_url(url, destination_path + file_name):
             self.send_response(self.current_connection, f"File downloaded successfully path({destination_path + file_name}).")
         else:
@@ -503,6 +511,7 @@ class Retargeter:
 
             # Run the asyncio event loop
             loop.run_until_complete(start_server())
+            loop.run_forever()
 
         # Start the server in a new thread
         server_thread = threading.Thread(target=run_server)
@@ -528,9 +537,23 @@ class Retargeter:
 
     def send_response(self, connection, message, no_close=False):
         if self.fetch_server_type() == "WebSocket":
-            asyncio.run(self.send_response_websocket(connection, message, no_close))
+            loop = asyncio.get_event_loop()
+            
+            # Check if we're in the main thread and if the loop is already running
+            if threading.current_thread() is threading.main_thread() and loop.is_running():
+                # Schedule the coroutine to be run in the current loop
+                asyncio.ensure_future(self.send_response_websocket(connection, message, no_close))
+            else:
+                # If we are not in the main thread, or the loop is not running, use the event loop of the connection
+                try:
+                    connection_loop = connection.loop
+                    asyncio.run_coroutine_threadsafe(self.send_response_websocket(connection, message, no_close), connection_loop)
+                except AttributeError:
+                    # Fallback to creating a new loop if no loop is found on connection
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(self.send_response_websocket(connection, message, no_close))
             return
-
         try:
             connection.sendall(message.encode('utf-8'))
         except Exception as e:
