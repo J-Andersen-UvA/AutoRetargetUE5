@@ -1,8 +1,5 @@
 import unreal
-import sys
-import fetchUEInfo
-sys.path.append('/c:/Users/VICON/Desktop/Code/DynamicIKRetarget/AutoRetargetUE5/rigRetargetHelpers')
-
+from . import fetchUEInfo
 
 # Using 2 IK-rigs, create a retargeter between them
 def create_retargeter(source_rig_path : str, target_rig_path : str, rtg_name : str="RTG") -> bool:
