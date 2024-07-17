@@ -18,13 +18,17 @@ def import_fbx_animation(fbx_file_path, destination_path, name, skeleton_path=""
     task.options.automated_import_should_detect_type = False
 
     if skeleton_path != "":
-        skeleton_asset = unreal.load_asset(skeleton_path)
-        if isinstance(skeleton_asset, unreal.Skeleton):
-            task.options.skeleton = skeleton_asset
-        elif isinstance(skeleton_asset, unreal.SkeletalMesh):
-            task.options.skeleton = skeleton_asset.skeleton
+        # Check if skeleton path is valid
+        if unreal.EditorAssetLibrary.does_asset_exist(skeleton_path):
+            skeleton_asset = unreal.load_asset(skeleton_path)
+            if isinstance(skeleton_asset, unreal.Skeleton):
+                task.options.skeleton = skeleton_asset
+            elif isinstance(skeleton_asset, unreal.SkeletalMesh):
+                task.options.skeleton = skeleton_asset.skeleton
+            else:
+                raise TypeError(f"The asset at {skeleton_path} is not of type Skeleton")
         else:
-            raise TypeError(f"The asset at {skeleton_path} is not of type Skeleton")
+            raise ValueError(f"The asset at {skeleton_path} does not exist")
     else:
         task.options.skeleton = None
 

@@ -100,7 +100,7 @@ def retarget_animations(retargeter_path: str, animation_paths: str, destination_
         if not unreal.EditorAssetLibrary.rename_asset(asset_path, new_asset_path):
             raise ValueError(f"Failed to move asset {asset_path} to {new_asset_path}")
 
-    return True
+    return [True, asset_name]
 
 # Example usage
 # print("++++++++++++++")

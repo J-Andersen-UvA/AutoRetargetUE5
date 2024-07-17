@@ -1,18 +1,19 @@
 import unreal
 import socket
 import threading
-import ikRigCreator
-import IKRetargeter
-import simpleQueue
-import skeletalMeshImporter
-import fetchUEInfo
-import animationImporter
-import animationExporter
-import receiveFile
+import rigRetargetHelpers.ikRigCreator as ikRigCreator
+import rigRetargetHelpers.IKRetargeter as IKRetargeter
+import helpers.simpleQueue as simpleQueue
+import importExportHelpers.skeletalMeshImporter as skeletalMeshImporter
+import helpers.fetchUEInfo as fetchUEInfo
+import importExportHelpers.animationImporter as animationImporter
+import importExportHelpers.animationExporter as animationExporter
+import importExportHelpers.receiveFile as receiveFile
 import functools
 import os
 import websockets
 import asyncio
+import requests
 
 class Retargeter:
     """
@@ -68,7 +69,6 @@ class Retargeter:
         
         self.thread_local = threading.local()
 
-
     def start(self, host="0.0.0.0", port=8070):
         self.running = True
         self.thread_local.serverType = "TCP"
@@ -122,6 +122,7 @@ class Retargeter:
                 args = dequeued_item.args
                 connection = dequeued_item.connection
                 self.thread_local.serverType = dequeued_item.connection_type
+                url = dequeued_item.url
                 print("Server type:", self.thread_local.serverType)
                 unreal.log(f"Calling function {func.__name__} with arguments: {args}")
             else:
@@ -138,7 +139,11 @@ class Retargeter:
                 result = func(args)
             elif func == animationExporter.export_animation:
                 result = func(*args)
-                self.send_file(result[1], connection)
+                # if self.thread_local.serverType is websocket, use url to send file
+                if self.thread_local.serverType == "WebSocket":
+                    self.send_file_to_url(result[1], url)
+                else:
+                    self.send_file(result[1], connection)
                 # return
             elif func == self.rig_retarget_send:
                 args = args[0].split(',')
@@ -233,7 +238,7 @@ class Retargeter:
         print("Retargeting animation:", retargeter_path, animation_path)
         self.queue.enqueue(IKRetargeter.retarget_animations, [retargeter_path, animation_path], connection_type=self.fetch_server_type())
 
-    def export_fbx_animation(self, args):
+    def export_fbx_animation(self, args, url=""):
         if not isinstance(args, list):
             args = args.split(',')
 
@@ -242,7 +247,7 @@ class Retargeter:
             raise ValueError("Invalid message format, missing arguments. Expecting: animation_asset_path, export_path, name(optional), ascii(optional), force_front_x_axis(optional)")
 
         print("Exporting animation to FBX:", args[0], args[1])
-        self.queue.enqueue(animationExporter.export_animation, args, connection=self.current_connection, connection_type=self.fetch_server_type())
+        self.queue.enqueue(animationExporter.export_animation, args, connection=self.current_connection, connection_type=self.fetch_server_type(), url=url)
 
     def receive_fbx(self, filename, connection=None):
         if connection is None:
@@ -285,7 +290,7 @@ class Retargeter:
     def rig_retarget_send_queue(self, args):
         self.queue.enqueue(self.rig_retarget_send, [args], connection_type=self.fetch_server_type())
 
-    def rig_retarget_send(self, source_mesh_path, target_mesh_path, animation_path):
+    def rig_retarget_send(self, source_mesh_path, target_mesh_path, animation_path, url=""):
         # TODO: Test this function
         if source_mesh_path == "" or target_mesh_path == "" or animation_path == "":
             self.send_response(self.current_connection, "Invalid message format, missing argument(s). Expecting: source_mesh_path, target_mesh_path, animation_path")
@@ -310,6 +315,7 @@ class Retargeter:
             target_rig_path = fetchUEInfo.fetch_rig_with_name(target_rig_name, "/Game/IKRigs")
 
         retarget_path = fetchUEInfo.fetch_retargets_with_name(retargeter_name, "/Game/Retargets")
+        print("Retargeter path:", retarget_path)
         # Check if the retargeter already exists
         if not retarget_path:
             print("Creating retargeter:", source_rig_path, target_rig_path, retargeter_name)
@@ -317,8 +323,11 @@ class Retargeter:
                 raise ValueError(f"Failed to create retargeter at path /Game/Retargets/{retargeter_name}")
             retarget_path = fetchUEInfo.fetch_retargets_with_name(retargeter_name, "/Game/Retargets")
 
-        IKRetargeter.retarget_animations(retarget_path, animation_path)
-        self.export_fbx_animation([animation_path, self.export_path, f"{animation_name}_{source_rig_name}_to_{target_rig_name}"])
+        result = IKRetargeter.retarget_animations(retarget_path, animation_path)
+        if not result[0]:
+            raise ValueError(f"Failed to retarget animation at path {animation_path}")
+
+        self.export_fbx_animation([f"/Game/Anims/RetargetedAnimations/{result[1]}", self.export_path, result[1]], url=url)
 
     def fetch_files(self, folder_path):
         # Fetch all files in the specified folder
@@ -375,6 +384,17 @@ class Retargeter:
         finally:
             # self.send_response(connection, f"File sent: {filepath}")
             connection.close()
+
+    def send_file_to_url(self, filepath, url):
+        try:
+            with open(filepath, 'rb') as file:
+                files = {'file': (filepath, file)}
+                response = requests.post(url, files=files)
+            print(f"Sent file: {filepath} to {url}")
+            return response.status_code, response.text
+        except Exception as e:
+            print(f"Failed to send file: {e}")
+            raise e
 
     def handle_data(self, data, connection):
         # Handle data received from client

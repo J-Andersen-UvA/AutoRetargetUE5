@@ -1,5 +1,5 @@
 import socket
-import pip._vendor.requests as requests
+import requests
 import os
 
 def open_listen_socket(host='0.0.0.0', port=8071, accept_timeout=10):
