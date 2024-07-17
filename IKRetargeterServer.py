@@ -3,9 +3,9 @@ import socket
 import threading
 import rigRetargetHelpers.ikRigCreator as ikRigCreator
 import rigRetargetHelpers.IKRetargeter as IKRetargeter
-import helpers.simpleQueue as simpleQueue
+import rigRetargetHelpers.simpleQueue as simpleQueue
 import importExportHelpers.skeletalMeshImporter as skeletalMeshImporter
-import helpers.fetchUEInfo as fetchUEInfo
+import rigRetargetHelpers.fetchUEInfo as fetchUEInfo
 import importExportHelpers.animationImporter as animationImporter
 import importExportHelpers.animationExporter as animationExporter
 import importExportHelpers.receiveFile as receiveFile
